@@ -1,11 +1,11 @@
 import os
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AuraMatch AI"
-    VERSION: str = "0.1.0"
+    VERSION: str = "0.2.0"
     API_V1_STR: str = "/api/v1"
 
     POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
@@ -25,8 +25,13 @@ class Settings(BaseSettings):
     REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
 
-    class Config:
-        case_sensitive = True
+    SECRET_KEY: str = os.getenv(
+        "SECRET_KEY", "super-secret-development-key-change-in-production"
+    )
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+
+    model_config = SettingsConfigDict(case_sensitive=True)
 
 
 settings = Settings()
