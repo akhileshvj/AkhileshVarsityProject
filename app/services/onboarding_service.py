@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.persona import PersonaProfile
 from app.schemas.persona import ExtractedPersonaProfile
+from app.services.embedding_service import embedding_service
 
 try:
     from openai import AsyncOpenAI
@@ -95,6 +96,13 @@ class OnboardingService:
         persona.lifestyle_summary = extracted.lifestyle_summary
         persona.core_values = extracted.core_values
         persona.dealbreakers = extracted.dealbreakers
+
+        embedding_payload = embedding_service.build_embedding_payload(
+            lifestyle_summary=extracted.lifestyle_summary,
+            core_values=extracted.core_values,
+            dealbreakers=extracted.dealbreakers,
+        )
+        persona.embedding = await embedding_service.generate_embedding(embedding_payload)
 
         await db.commit()
         await db.refresh(persona)
