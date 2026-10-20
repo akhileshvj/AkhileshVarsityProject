@@ -2,6 +2,7 @@ from app.schemas.onboarding import ChatMessage, OnboardingChatRequest, Onboardin
 from app.schemas.persona import ExtractedPersonaProfile, PersonaProfileRead
 from app.schemas.token import Token, TokenPayload
 from app.schemas.user import UserBase, UserCreate, UserRead
+from app.schemas.negotiation import NegotiationRead, NegotiationStartRequest
 
 __all__ = [
     "UserCreate",
@@ -14,4 +15,6 @@ __all__ = [
     "OnboardingChatResponse",
     "ExtractedPersonaProfile",
     "PersonaProfileRead",
+    "NegotiationRead",
+    "NegotiationStartRequest",
 ]

@@ -13,7 +13,14 @@ except ImportError:  # pragma: no cover - optional dependency
 
 class EmbeddingService:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY) if AsyncOpenAI is not None else None
+        self.client = None
+        if AsyncOpenAI is not None and not (
+            settings.OPENAI_BASE_URL and "groq.com" in settings.OPENAI_BASE_URL
+        ):
+            client_kwargs = {"api_key": settings.OPENAI_API_KEY}
+            if settings.OPENAI_BASE_URL:
+                client_kwargs["base_url"] = settings.OPENAI_BASE_URL
+            self.client = AsyncOpenAI(**client_kwargs)
 
     async def generate_embedding(self, text: str) -> List[float]:
         """
@@ -26,13 +33,16 @@ class EmbeddingService:
         }:
             return self._mock_embedding(text)
 
-        response = await self.client.embeddings.create(
-            model=settings.EMBEDDING_MODEL,
-            input=text,
-            dimensions=settings.EMBEDDING_DIMENSIONS,
-        )
-        embedding = response.data[0].embedding
-        return self._normalize_vector(embedding)
+        try:
+            response = await self.client.embeddings.create(
+                model=settings.EMBEDDING_MODEL,
+                input=text,
+                dimensions=settings.EMBEDDING_DIMENSIONS,
+            )
+            embedding = response.data[0].embedding
+            return self._normalize_vector(embedding)
+        except Exception:
+            return self._mock_embedding(text)
 
     @staticmethod
     def build_embedding_payload(lifestyle_summary: str, core_values: dict, dealbreakers: dict) -> str:

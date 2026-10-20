@@ -20,6 +20,7 @@ class Negotiation(Base):
     )
     status: Mapped[str] = mapped_column(String(50), default="INITIATED", nullable=False)
     compatibility_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    synthesis_summary: Mapped[str | None] = mapped_column(String, nullable=True)
     dialogue_log: Mapped[list[Any]] = mapped_column(JSON, default=list, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False

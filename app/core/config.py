@@ -32,13 +32,14 @@ class Settings(BaseSettings):
         "SECRET_KEY", "super-secret-development-key-change-in-production"
     )
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "mock-key")
+    OPENAI_BASE_URL: str | None = os.getenv("OPENAI_BASE_URL")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1536"))
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
 
-    model_config = SettingsConfigDict(case_sensitive=True)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
 settings = Settings()

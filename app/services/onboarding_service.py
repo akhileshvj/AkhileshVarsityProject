@@ -22,7 +22,10 @@ class OnboardingService:
         self.raw_client = None
         self.client = None
         if AsyncOpenAI is not None and instructor is not None:
-            self.raw_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            client_kwargs: dict[str, Any] = {"api_key": settings.OPENAI_API_KEY}
+            if settings.OPENAI_BASE_URL:
+                client_kwargs["base_url"] = settings.OPENAI_BASE_URL
+            self.raw_client = AsyncOpenAI(**client_kwargs)
             self.client = instructor.from_openai(self.raw_client)
 
     async def generate_response_and_extract(
@@ -30,18 +33,35 @@ class OnboardingService:
         conversation_history: List[dict[str, Any]],
         latest_message: str,
     ) -> Tuple[str, ExtractedPersonaProfile]:
+        if settings.OPENAI_API_KEY in {"mock-key", "your-openai-or-mock-api-key"}:
+            extracted = ExtractedPersonaProfile(
+                lifestyle_summary=f"Discovered habits based on: {latest_message}",
+                core_values={"growth": "high", "authenticity": "vital"},
+                dealbreakers={"smoking": False, "relocation": "open"},
+                is_complete=True,
+            )
+            return (
+                "I have a comprehensive understanding of your persona and core constraints. "
+                "Let's find your matches!",
+                extracted,
+            )
+
         if self.client is None or self.raw_client is None:
             raise RuntimeError(
                 "OpenAI and Instructor dependencies are required for onboarding generation."
             )
 
         system_prompt = (
-            "You are the AuraMatch AI Onboarding Specialist. Your purpose is to uncover "
-            "the user's core lifestyle habits, deep values, and absolute non-negotiables / dealbreakers.\n"
-            "Be empathetic, perceptive, and concise. Ask targeted follow-up questions.\n"
-            "Extract all gathered insights into the structured schema.\n"
-            "Mark is_complete=True ONLY when at least 2 core values, 2 lifestyle traits, "
-            "and 1 explicit dealbreaker have been identified."
+            "You are the AuraMatch AI Strategic Persona Architect. Your mission is to uncover "
+            "a user's authentic dating persona through a thoughtful, empathetic conversation.\n\n"
+            "STRATEGY:\n"
+            "1. Ask only ONE targeted question at a time.\n"
+            "2. Turn 1 focuses on daily rhythm and work-life lifestyle.\n"
+            "3. Turn 2 focuses on core psychological values and connection styles.\n"
+            "4. Turn 3 focuses on explicit non-negotiables and dealbreakers.\n"
+            "5. Set is_complete=True only after at least 2 lifestyle traits, 2 core values, "
+            "and 1 explicit dealbreaker have been gathered.\n\n"
+            "Extract whatever data you have discovered so far into the structured schema."
         )
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -56,14 +76,15 @@ class OnboardingService:
         )
 
         reply_prompt = (
-            f"Given the user's latest message and our extracted understanding:\n"
-            f"Summary: {extracted_data.lifestyle_summary}\n"
-            f"Core Values: {json.dumps(extracted_data.core_values)}\n"
-            f"Dealbreakers: {json.dumps(extracted_data.dealbreakers)}\n"
-            f"Is Complete: {extracted_data.is_complete}\n\n"
-            "Generate a warm, engaging conversational reply (1-2 sentences). "
-            "If is_complete is True, warmly announce that their persona profile is ready. "
-            "Otherwise, ask the next relevant question."
+            f"You are the AuraMatch AI dating strategist. The user just said: '{latest_message}'.\n"
+            f"Extracted profile status:\n"
+            f"- Lifestyle: {extracted_data.lifestyle_summary}\n"
+            f"- Core Values: {extracted_data.core_values}\n"
+            f"- Dealbreakers: {extracted_data.dealbreakers}\n"
+            f"- Is Complete: {extracted_data.is_complete}\n\n"
+            "If is_complete is false, acknowledge what they said warmly and ask the next "
+            "strategic question. If true, thank them and state that the agent is ready to "
+            "search and negotiate with candidate agents."
         )
 
         response = await self.raw_client.chat.completions.create(
